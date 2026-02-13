@@ -8,6 +8,7 @@ using CSV
 using DataFrames
 using StatsBase
 using Plots
+using BusbarTopologiesSelection; const _BTS = BusbarTopologiesSelection
 
 #test_case_folder = joinpath(dirname(@__DIR__),"test_cases","RTS_GMLC_data","RTS_data")
 test_case_folder = joinpath(dirname(@__DIR__),"test_cases")

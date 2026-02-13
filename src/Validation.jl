@@ -79,9 +79,9 @@ test_case_2["gen"]["138"]["cost"][1] = 9000
 
 test_case_opf_1 = deepcopy(test_case_1)
 test_case_opf_2 = deepcopy(test_case_2)
-splitted_bus_ac = [69,24]
-name_file_1 = "69_24_standard_"
-name_file_2 = "69_24_standard_congested"
+splitted_bus_ac = [49,46]
+name_file_1 = "49_46_standard"
+name_file_2 = "49_46_standard_congested"
 
 
 test_case_updated_split_1_result = deepcopy(test_case_1)

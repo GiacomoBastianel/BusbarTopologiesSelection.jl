@@ -236,9 +236,43 @@ end
 #dict_opf = JSON.parsefile(joinpath(results_folder,"Validation_$(name_file_2)_1_8784_OPF.json"))
 
 dict_4_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_1,"4_configurations")
+
+dict_1_4_configurations_I   = upload_batch_opf_validation_results(24,2160,24  ,results_folder,name_file_1,"4_configurations")
+dict_1_4_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_1,"4_configurations")
+dict_1_4_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_1,"4_configurations")
+dict_1_4_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_1,"4_configurations")
+
+
 dict_1_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_1,"1_configurations")
-dict_1_OPF = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_1,"OPF")
+
+dict_1_1_configurations_I   = upload_batch_opf_validation_results(24,2160,24,results_folder  ,name_file_1,  "1_configurations")
+dict_1_1_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_1,"1_configurations")
+dict_1_1_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_1,"1_configurations")
+dict_1_1_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_1,"1_configurations")
+
+
+
+
+
+dict_1_OPF_I  = upload_batch_opf_validation_results(24  ,4392,24,results_folder,name_file_1,"OPF")
+dict_1_OPF_II = upload_batch_opf_validation_results(4392,8784,24,results_folder,name_file_1,"OPF")
 
 dict_2_4_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"4_configurations")
-dict_2_1_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"1_configurations")
-dict_2_1_OPF = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"OPF")
+
+dict_2_4_configurations_I   = upload_batch_opf_validation_results(24,2160,24,results_folder,name_file_2,"4_configurations")
+dict_2_4_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_2,"4_configurations")
+dict_2_4_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_2,"4_configurations")
+dict_2_4_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_2,"4_configurations")
+
+
+#dict_2_1_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"1_configurations")
+
+dict_2_1_configurations_I   = upload_batch_opf_validation_results(24,2160,24,results_folder,name_file_2,  "1_configurations")
+dict_2_1_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_2,"1_configurations")
+dict_2_1_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_2,"1_configurations")
+dict_2_1_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_2,"1_configurations")
+
+
+
+dict_2_1_OPF_I  = upload_batch_opf_validation_results(24,4392,24,results_folder,name_file_2,"OPF")
+dict_2_1_OPF_II = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"OPF")
