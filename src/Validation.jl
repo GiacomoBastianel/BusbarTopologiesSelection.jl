@@ -81,7 +81,7 @@ test_case_opf_1 = deepcopy(test_case_1)
 test_case_opf_2 = deepcopy(test_case_2)
 splitted_bus_ac = [49,46]
 name_file_1 = "49_46_standard"
-name_file_2 = "49_46_standard_congested"
+name_file_2 = "49_46_congested"
 
 
 test_case_updated_split_1_result = deepcopy(test_case_1)
@@ -95,11 +95,11 @@ test_case_updated_split_2_result,  switches_couples_2_result,  extremes_ZILs_2_r
 # Upload results
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 
-bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_original.json"))
+bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_49_46.json"))
 #opf_congested_1 = JSON.parsefile(joinpath(results_folder,      "result_opf_49_46_data_center.json"))
 #opf_ac_congested_1 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_49_46_data_center.json"))
 
-bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested.json"))
+bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested_49_46.json"))
 #opf_congested_2 = JSON.parsefile(joinpath(results_folder,      "result_opf_congested_49_46_data_center.json"))
 #opf_ac_congested_2 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_congested_49_46_data_center.json"))
 

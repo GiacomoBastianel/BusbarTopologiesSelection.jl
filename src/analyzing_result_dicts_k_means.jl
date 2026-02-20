@@ -6,7 +6,8 @@ using PowerModelsACDC; const _PMACDC = PowerModelsACDC
 using JuMP, Ipopt, JSON, HiGHS, Gurobi
 using PowerPlots, CSV, DataFrames, StatsBase, Plots
 
-# Load helper data
+####################
+# Test case
 test_case_folder = joinpath(dirname(@__DIR__),"test_cases")
 ipopt = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol" => 1e-6, "print_level" => 0)
 
@@ -15,44 +16,18 @@ load = rep.demand
 wind_cf = rep.wind_cf
 n_timesteps = length(load)
 
-test_case_1 = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
-test_case_original_1 = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
 
-test_case_2 = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
-test_case_original_2 = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
+test_case = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
+test_case_original = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
 
-# Adding load
-
-test_case_2["load"]["100"] = deepcopy(test_case["load"]["99"])
-test_case_2["load"]["100"]["source_id"][2] = 69
-test_case_2["load"]["100"]["load_bus"] = 69
-test_case_2["load"]["100"]["pd"] = deepcopy(test_case["load"]["97"]["pd"])
-
-test_case_original_2["load"]["100"] = deepcopy(test_case["load"]["99"])
-test_case_original_2["load"]["100"]["source_id"][2] = 69
-test_case_original_2["load"]["100"]["load_bus"] = 69
-test_case_original_2["load"]["100"]["pd"] = deepcopy(test_case["load"]["97"]["pd"])
-
-
-for (b_id,b) in test_case_1["bus"]
+for (b_id,b) in test_case["bus"]
     b["vmax"] = 1.1
     b["vmin"] = 0.9
 end
-for (b_id,b) in test_case_original_1["bus"]
+for (b_id,b) in test_case_original["bus"]
     b["vmax"] = 1.1
     b["vmin"] = 0.9
 end
-
-for (b_id,b) in test_case_2["bus"]
-    b["vmax"] = 1.1
-    b["vmin"] = 0.9
-end
-for (b_id,b) in test_case_original_2["bus"]
-    b["vmax"] = 1.1
-    b["vmin"] = 0.9
-end
-
-
 function add_VOLL_generators(data)
     first_l = maximum(parse.(Int, keys(data["gen"])))
     count = 0
@@ -70,34 +45,27 @@ function add_VOLL_generators(data)
         println("Added VOLL gen $l at bus $b_id")
     end
 end
-add_VOLL_generators(test_case_1)
-add_VOLL_generators(test_case_2)
+add_VOLL_generators(test_case)
+test_case["gen"]["138"]["cost"][1] = 9000
 
-test_case_opf_1 = deepcopy(test_case_1)
-test_case_opf_2 = deepcopy(test_case_2)
+test_case_opf = deepcopy(test_case)
+#splitted_bus_ac = [49,46]
 splitted_bus_ac = [69,24]
-name_file_1 = "69_24_standard"
-name_file_2 = "69_24_standard_data_center"
 
-test_case_updated_split_1 = deepcopy(test_case_1)
-test_case_updated_split_2 = deepcopy(test_case_2)
+n_timesteps = 365
+test_case_updated_split = deepcopy(test_case)
+test_case_result = deepcopy(test_case)
+test_case_updated_split,  switches_couples_result,  extremes_ZILs_result  = _PMTA.AC_busbars_split(test_case_result,splitted_bus_ac)
 
-test_case_updated_split_1,  switches_couples_1,  extremes_ZILs_1  = _PMTA.AC_busbars_split(test_case_1,splitted_bus_ac)
-test_case_updated_split_2,  switches_couples_2,  extremes_ZILs_2  = _PMTA.AC_busbars_split(test_case_2,splitted_bus_ac)
-
-###
+####################
 # Upload results
+names = ["49_46_standard","49_46_congested","49_46_standard_data_center","49_46_congested_data_center","69_24_standard","69_24_congested","69_24_standard_data_center","69_24_congested_data_center"]
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
-load_multiplier = 2
+simulation_name = names[7]
 
-bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested_49_46.json"))
-opf_congested_1 = JSON.parsefile(joinpath(results_folder,      "result_opf_congested_49_46.json"))
-opf_ac_congested_1 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_congested_49_46.json"))
-
-bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_69_24_standard_data_center.json"))
-opf_congested_2 = JSON.parsefile(joinpath(results_folder,      "result_opf_69_24_standard_data_center.json"))
-opf_ac_congested_2 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_69_24_standard_data_center.json"))
-
+bs_congested = JSON.parsefile(joinpath(results_folder,        "result_bs_$(simulation_name).json"))
+opf_congested = JSON.parsefile(joinpath(results_folder,      "result_opf_$(simulation_name).json"))
+opf_ac_congested = JSON.parsefile(joinpath(results_folder,"result_opf_ac_$(simulation_name).json"))
 
 #################
 
@@ -142,22 +110,17 @@ function sort_configurations(grid_bs,result_bs,n_timesteps)
     return confs, sort_times
 end
 
-dict_confs_1, sorted_confs_1 = sort_configurations(test_case_updated_split_1,bs_congested_1,n_timesteps)
-dict_confs_2, sorted_confs_2 = sort_configurations(test_case_updated_split_2,bs_congested_2,n_timesteps)
+dict_confs, sorted_confs = sort_configurations(test_case_updated_split,bs_congested,n_timesteps)
 
 #################
 # Selecting configurations and timesteps
 n_confs_selected = 4
-confs_selected_1 = [parse(Int, sorted_confs_1[i][1]) for i in 1:n_confs_selected]
-timeseries_selected_1 = [first(dict_confs_1["$(confs_selected[i])"]["timesteps"]) for i in 1:n_confs_selected]
-conf_and_timeseries_1 = [[confs_selected_1[i],timeseries_selected_1[i]] for i in 1:n_confs_selected]
-result_congested_comparison_1 = JSON.parsefile(joinpath(results_folder,"comparison_results_$(name_file_1).json"))
+confs_selected = [parse(Int, sorted_confs[i][1]) for i in 1:n_confs_selected]
+timeseries_selected = [first(dict_confs["$(confs_selected[i])"]["timesteps"]) for i in 1:n_confs_selected]
+conf_and_timeseries = [[confs_selected[i],timeseries_selected[i]] for i in 1:n_confs_selected]
+result_congested_comparison = JSON.parsefile(joinpath(results_folder,"comparison_results_$(simulation_name).json"))
 
-confs_selected_2 = [parse(Int, sorted_confs_2[i][1]) for i in 1:n_confs_selected]
-timeseries_selected_2 = [first(dict_confs_2["$(confs_selected[i])"]["timesteps"]) for i in 1:n_confs_selected]
-conf_and_timeseries_2 = [[confs_selected_2[i],timeseries_selected_2[i]] for i in 1:n_confs_selected]
-result_congested_comparison_2 = JSON.parsefile(joinpath(results_folder,"comparison_results_$(name_file_2).json"))
-
+result_congested_comparison["1"]
 
 ###############
 function count_configurations(n_timesteps,conf_and_timeseries,result_comparison,opf_ac)
@@ -186,72 +149,9 @@ function count_configurations(n_timesteps,conf_and_timeseries,result_comparison,
     end
     return count_configurations
 end
-number_configurations_1 = count_configurations(n_timesteps,conf_and_timeseries_1,result_congested_comparison_1,opf_ac_congested_1)
-number_configurations_2 = count_configurations(n_timesteps,conf_and_timeseries_2,result_congested_comparison_2,opf_ac_congested_2)
+number_configurations = count_configurations(n_timesteps,conf_and_timeseries,result_congested_comparison,opf_ac_congested)
 
 ###############
-# Tailored part
-##########
-
-print_switch_configuration(conf_and_timeseries_1[1][1],dict_confs_1,test_case_updated_split_1,test_case_original)
-print_switch_configuration(conf_and_timeseries_1[2][1],dict_confs_1,test_case_updated_split_1,test_case_original)
-print_switch_configuration(conf_and_timeseries_1[3][1],dict_confs_1,test_case_updated_split_1,test_case_original)
-print_switch_configuration(conf_and_timeseries_1[4][1],dict_confs_1,test_case_updated_split_1,test_case_original)
-
-print_switch_configuration(conf_and_timeseries_2[1][1],dict_confs_2,test_case_updated_split_2,test_case_original)
-print_switch_configuration(conf_and_timeseries_2[2][1],dict_confs_2,test_case_updated_split_2,test_case_original)
-print_switch_configuration(conf_and_timeseries_2[3][1],dict_confs_2,test_case_updated_split_2,test_case_original)
-print_switch_configuration(conf_and_timeseries_2[4][1],dict_confs_2,test_case_updated_split_2,test_case_original)
-
-
-
-
-
-
-###########
-function push_switch_configuration(test_case_updated_split,conf,confs_original)
-    vect_sw = []
-    for sw_id in 1:length(test_case_updated_split["switch"])
-        push!(vect_sw,confs_original["$conf"]["configuration"][sw_id])
-    end
-    return vect_sw
-end   
-
-sw_1_1 = push_switch_configuration(test_case_updated_split_1,conf_and_timeseries_1[1][1],dict_confs_1)
-sw_2_1 = push_switch_configuration(test_case_updated_split_1,conf_and_timeseries_1[2][1],dict_confs_1)
-sw_3_1 = push_switch_configuration(test_case_updated_split_1,conf_and_timeseries_1[3][1],dict_confs_1)
-sw_4_1 = push_switch_configuration(test_case_updated_split_1,conf_and_timeseries_1[4][1],dict_confs_1)
-
-sw_1_2 = push_switch_configuration(test_case_updated_split_2,conf_and_timeseries_2[1][1],dict_confs_2)
-sw_2_2 = push_switch_configuration(test_case_updated_split_2,conf_and_timeseries_2[2][1],dict_confs_2)
-sw_3_2 = push_switch_configuration(test_case_updated_split_2,conf_and_timeseries_2[3][1],dict_confs_2)
-sw_4_2 = push_switch_configuration(test_case_updated_split_2,conf_and_timeseries_2[4][1],dict_confs_2)
-
-function compare_switch_configurations(sw_1, sw_2)
-    differences = []
-    for i in 1:length(sw_1)
-        if sw_1[i] != sw_2[i]
-            push!(differences, (i, sw_1[i], sw_2[i]))
-        end
-    end
-    return differences
-end
-differences_sw_1_1_sw_1_2 = compare_switch_configurations(sw_1_1, sw_1_2)
-differences_sw_1_2_sw_1_2 = compare_switch_configurations(sw_2_1, sw_2_2)
-differences_sw_1_3_sw_1_3 = compare_switch_configurations(sw_3_1, sw_3_2)
-differences_sw_1_4_sw_1_4 = compare_switch_configurations(sw_4_1, sw_4_2)
-
-println("Differences between sw_1_1 and sw_1_2:")
-for (idx, val1, val2) in differences_sw_1_1_sw_1_2
-    println("Switch $idx: sw_1_1 = $val1, sw_1_2 = $val2")
-end
-
-#print_switch_configuration(conf_and_timeseries[5][1],dict_confs,test_case_updated_split,test_case_original)
-
-# Top left is 4
-# Top right is 2
-# Bottom left is 4 
-# Bottom right is 1
 
 timesteps_OPF = number_configurations["OPF"]["timesteps"]
 timesteps_1 =  number_configurations["$(conf_and_timeseries[1][1])"]["timesteps"]
@@ -265,7 +165,7 @@ wind_2 = [wind_cf[t] for t in timesteps_2]
 wind_3 = [wind_cf[t] for t in timesteps_3]
 wind_4 = [wind_cf[t] for t in timesteps_4]
 
-load_OPF = [load[t] for t in timesteps_OPF]
+load_OPF =[load[t] for t in timesteps_OPF]
 load_1 = [load[t] for t in timesteps_1]
 load_2 = [load[t] for t in timesteps_2]
 load_3 = [load[t] for t in timesteps_3]
@@ -287,23 +187,24 @@ opf_4 = sum(result_congested_comparison["$h"]["AC_OPF"]["objective"] for h in ti
 bus_4 = sum(result_congested_comparison["$h"]["$(conf_and_timeseries[4][1])"]["AC_OPF"]["objective"] for h in timesteps_4)
 (1 - bus_4/opf_4)*100
 
-load_combined = vcat(load_1,load_OPF,load_3)
-wind_combined = vcat(wind_1,wind_OPF,wind_3)
+load_combined = vcat(load_4,load_OPF)
+wind_combined = vcat(wind_4,load_OPF)
+
 
 # Add colors here
-scatter(load_1, wind_1, label="Configuration 1", color=:blue)
-scatter!(load_2, wind_2, label="Configuration 2", color=:green)
-scatter!(load_3, wind_3, label="Configuration 3", color=:orange)
-scatter!(load_4, wind_4, label="Configuration 4",color=:red)
-scatter!(load_OPF,wind_OPF,label="OPF",color=:gray,xlabel= "Demand (p.u.)",ylabel="Wind capacity factor [-]",legend=:topright,grid =:none)
+scatter(load_1, wind_1,  label="Topology 1", color=:blue)
+scatter!(load_2, wind_2, label="Topology 2", color=:green)
+scatter!(load_3, wind_3, label="Topology 3", color=:orange)
+scatter!(load_4, wind_4, label="Topology 4",color=:red)
+scatter!(load_OPF,wind_OPF,label="Original",color=:gray,xlabel= "Demand (p.u.)",ylabel="Wind capacity factor [-]",legend=:topright,grid =:none)
 
 #scatter!(load_153 ,wind_153,label="Configuration 4",xlabel= "Demand [-]",ylabel="Wind capacity factor [-]",legend=:topright,grid =:none)
 #scatter!(load_OPF,wind_OPF,label="OPF")
 
 results_figures_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results/Figures"
-savefig(joinpath(results_figures_folder,"$(name_file)_distribution.png"))
-savefig(joinpath(results_figures_folder,"$(name_file)_distribution.pdf"))
-savefig(joinpath(results_figures_folder,"$(name_file)_distribution.svg"))
+savefig(joinpath(results_figures_folder,"$(simulation_name)_distribution.png"))
+savefig(joinpath(results_figures_folder,"$(simulation_name)_distribution.pdf"))
+savefig(joinpath(results_figures_folder,"$(simulation_name)_distribution.svg"))
 
 
 ###############

@@ -19,7 +19,7 @@ test_case = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m")
 test_case_original = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
 
 # Adding load
-#=
+
 test_case["load"]["100"] = deepcopy(test_case["load"]["99"])
 test_case["load"]["100"]["source_id"][2] = 69
 test_case["load"]["100"]["load_bus"] = 69
@@ -29,7 +29,7 @@ test_case_original["load"]["100"] = deepcopy(test_case["load"]["99"])
 test_case_original["load"]["100"]["source_id"][2] = 69
 test_case_original["load"]["100"]["load_bus"] = 69
 test_case_original["load"]["100"]["pd"] = deepcopy(test_case["load"]["97"]["pd"])
-=#
+
 
 for (b_id,b) in test_case["bus"]
     b["vmax"] = 1.1
@@ -70,9 +70,9 @@ test_case_updated_split,  switches_couples,  extremes_ZILs  = _PMTA.AC_busbars_s
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 load_multiplier = 1
 
-bs_congested = JSON.parsefile(joinpath(results_folder,        "result_bs_original.json"))
-opf_congested = JSON.parsefile(joinpath(results_folder,      "result_opf_original.json"))
-opf_ac_congested = JSON.parsefile(joinpath(results_folder,"result_opf_ac_original.json"))
+bs_congested = JSON.parsefile(joinpath(results_folder,        "result_bs_69_24_standard_data_center.json"))
+opf_congested = JSON.parsefile(joinpath(results_folder,      "result_opf_69_24_standard_data_center.json"))
+opf_ac_congested = JSON.parsefile(joinpath(results_folder,"result_opf_ac_69_24_standard_data_center.json"))
 
 obj_bs_congested     = [bs_congested["$h"]["objective"] for h in 1:n_timesteps] 
 obj_opf_congested    = [opf_congested["$h"]["objective"] for h in 1:n_timesteps] 
@@ -132,7 +132,7 @@ timeseries_selected = [first(dict_confs["$(confs_selected[i])"]["timesteps"]) fo
 conf_and_timeseries = [[confs_selected[i],timeseries_selected[i]] for i in 1:n_confs_selected]
 
 ###################
-#=
+
 function compare_different_topologies(grid_original,grid_bs,switches_couples,extremes_ZILs,n_timesteps,opf_ac,opf_lpac,conf_and_timeseries,result_bs,wind,load,load_multiplier)
     result_dict = Dict{String,Any}()
     for t in 1:n_timesteps
@@ -175,11 +175,11 @@ end
 result_congested_comparison = compare_different_topologies(test_case_original,test_case_updated_split,switches_couples,extremes_ZILs,n_timesteps,opf_ac_congested,opf_congested,conf_and_timeseries,bs_congested,wind_cf,load,load_multiplier)
 
 json_result_congested_comparison = JSON.json(result_congested_comparison)
-open(joinpath(results_folder,"comparison_results_$(name_file).json"),"w") do f 
+open(joinpath(results_folder,"comparison_results_69_24_standard_data_center.json"),"w") do f 
     write(f, json_result_congested_comparison) 
 end 
-=#
-result_congested_comparison = JSON.parsefile(joinpath(results_folder,"comparison_results_$(name_file).json"))
+
+result_congested_comparison = JSON.parsefile(joinpath(results_folder,"comparison_results_69_24_standard_data_center.json"))
 
 
 ###############

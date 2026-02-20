@@ -75,11 +75,32 @@ add_VOLL_generators(test_case_2)
 test_case_1["gen"]["138"]["cost"][1] = 9000
 test_case_2["gen"]["138"]["cost"][1] = 9000
 
+test_case_1["load"]["100"] = deepcopy(test_case_1["load"]["99"])
+test_case_1["load"]["100"]["source_id"][2] = 69
+test_case_1["load"]["100"]["load_bus"] = 69
+test_case_1["load"]["100"]["pd"] = deepcopy(test_case_1["load"]["97"]["pd"])
+
+test_case_2["load"]["100"] = deepcopy(test_case_2["load"]["99"])
+test_case_2["load"]["100"]["source_id"][2] = 69
+test_case_2["load"]["100"]["load_bus"] = 69
+test_case_2["load"]["100"]["pd"] = deepcopy(test_case_2["load"]["97"]["pd"])
+
+test_case_original_1["load"]["100"] = deepcopy(test_case_original_1["load"]["99"])
+test_case_original_1["load"]["100"]["source_id"][2] = 69
+test_case_original_1["load"]["100"]["load_bus"] = 69
+test_case_original_1["load"]["100"]["pd"] = deepcopy(test_case_original_1["load"]["97"]["pd"])
+
+test_case_original_2["load"]["100"] = deepcopy(test_case_original_2["load"]["99"])
+test_case_original_2["load"]["100"]["source_id"][2] = 69
+test_case_original_2["load"]["100"]["load_bus"] = 69
+test_case_original_2["load"]["100"]["pd"] = deepcopy(test_case_original_2["load"]["97"]["pd"])
+
+
 test_case_opf_1 = deepcopy(test_case_1)
 test_case_opf_2 = deepcopy(test_case_2)
-splitted_bus_ac = [49,46]
-name_file_1 = "49_46_data_center"
-name_file_2 = "49_46_congested_data_center"
+splitted_bus_ac = [69,24]
+name_file_1 = "69_24_standard_data_center"
+name_file_2 = "69_24_congested_data_center"
 
 
 test_case_updated_split_1_result = deepcopy(test_case_1)
@@ -93,11 +114,11 @@ test_case_updated_split_2_result,  switches_couples_2_result,  extremes_ZILs_2_r
 # Upload results
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 
-bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_49_46_data_center.json"))
+bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_$(name_file_1).json"))
 #opf_congested_1 = JSON.parsefile(joinpath(results_folder,      "result_opf_49_46_data_center.json"))
 #opf_ac_congested_1 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_49_46_data_center.json"))
 
-bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested_49_46_data_center.json"))
+bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested_data_center.json"))
 #opf_congested_2 = JSON.parsefile(joinpath(results_folder,      "result_opf_congested_49_46_data_center.json"))
 #opf_ac_congested_2 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_congested_49_46_data_center.json"))
 
@@ -226,7 +247,7 @@ function upload_batch_opf_validation_results(first_hour,last_hour,size_batch,res
         GC.gc()  # Trigger garbage collection to free up
     end
     json_dict = JSON.json(dict)        
-    open(joinpath(results_folder,"Validation_$(name_file)_$(Int64(first_hour/size_batch))_$(last_hour)_$(type).json"),"w") do f 
+    open(joinpath(results_folder,"Validation_$(name_file)_$(Int64(first_hour/size_batch))_$(last_hour)_$(type)_II.json"),"w") do f 
         write(f, json_dict) 
     end
     return dict
@@ -234,7 +255,7 @@ end
 
 #dict = upload_batch_opf_validation_results(24,8784,24,results_folder,conf_and_timeseries_2_validation_4,name_file_2,"OPF")
 #dict_opf = JSON.parsefile(joinpath(results_folder,"Validation_$(name_file_2)_1_8784_OPF.json"))
-
+#=
 dict_4_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_1,"4_configurations")
 
 dict_1_4_configurations_I   = upload_batch_opf_validation_results(24,2160,24  ,results_folder,name_file_1,"4_configurations")
@@ -249,7 +270,7 @@ dict_1_1_configurations_I   = upload_batch_opf_validation_results(24,2160,24,res
 dict_1_1_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_1,"1_configurations")
 dict_1_1_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_1,"1_configurations")
 dict_1_1_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_1,"1_configurations")
-
+=#
 
 
 
@@ -257,20 +278,20 @@ dict_1_1_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,r
 dict_1_OPF_I  = upload_batch_opf_validation_results(24  ,4392,24,results_folder,name_file_1,"OPF")
 dict_1_OPF_II = upload_batch_opf_validation_results(4392,8784,24,results_folder,name_file_1,"OPF")
 
-dict_2_4_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"4_configurations")
+#dict_2_4_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"4_configurations")
 
-dict_2_4_configurations_I   = upload_batch_opf_validation_results(24,2160,24,results_folder,name_file_2,"4_configurations")
-dict_2_4_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_2,"4_configurations")
-dict_2_4_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_2,"4_configurations")
-dict_2_4_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_2,"4_configurations")
+dict_2_4_configurations_I   = upload_batch_opf_validation_results(24,2160,24,results_folder  ,name_file_1,"4_configurations")
+dict_2_4_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_1,"4_configurations")
+dict_2_4_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_1,"4_configurations")
+dict_2_4_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_1,"4_configurations")
 
 
 #dict_2_1_configurations = upload_batch_opf_validation_results(24,8784,24,results_folder,name_file_2,"1_configurations")
 
-dict_2_1_configurations_I   = upload_batch_opf_validation_results(24,2160,24,results_folder,name_file_2,  "1_configurations")
-dict_2_1_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_2,"1_configurations")
-dict_2_1_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_2,"1_configurations")
-dict_2_1_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_2,"1_configurations")
+dict_2_1_configurations_I   = upload_batch_opf_validation_results(24,2160,24,results_folder,  name_file_1,"1_configurations")
+dict_2_1_configurations_II  = upload_batch_opf_validation_results(2160,4320,24,results_folder,name_file_1,"1_configurations")
+dict_2_1_configurations_III = upload_batch_opf_validation_results(4320,6480,24,results_folder,name_file_1,"1_configurations")
+dict_2_1_configurations_IV  = upload_batch_opf_validation_results(6480,8784,24,results_folder,name_file_1,"1_configurations")
 
 
 
