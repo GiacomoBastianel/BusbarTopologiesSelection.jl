@@ -19,7 +19,7 @@ test_case = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m")
 test_case_original = _PM.parse_file(joinpath(test_case_folder,"pglib_opf_case118_ieee.m"))
 
 # Adding load
-
+#=
 test_case["load"]["100"] = deepcopy(test_case["load"]["99"])
 test_case["load"]["100"]["source_id"][2] = 69
 test_case["load"]["100"]["load_bus"] = 69
@@ -29,7 +29,7 @@ test_case_original["load"]["100"] = deepcopy(test_case["load"]["99"])
 test_case_original["load"]["100"]["source_id"][2] = 69
 test_case_original["load"]["100"]["load_bus"] = 69
 test_case_original["load"]["100"]["pd"] = deepcopy(test_case["load"]["97"]["pd"])
-
+=#
 
 for (b_id,b) in test_case["bus"]
     b["vmax"] = 1.1
@@ -60,8 +60,8 @@ end
 add_VOLL_generators(test_case)
 
 test_case_opf = deepcopy(test_case)
-splitted_bus_ac = [69,24]
-name_file = "69_24"
+splitted_bus_ac = [49,46]
+name_file = "49_46_congested"
 test_case_updated_split = deepcopy(test_case)
 test_case_updated_split,  switches_couples,  extremes_ZILs  = _PMTA.AC_busbars_split(test_case,splitted_bus_ac)
 
@@ -70,9 +70,9 @@ test_case_updated_split,  switches_couples,  extremes_ZILs  = _PMTA.AC_busbars_s
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 load_multiplier = 1
 
-bs_congested = JSON.parsefile(joinpath(results_folder,        "result_bs_69_24_standard_data_center.json"))
-opf_congested = JSON.parsefile(joinpath(results_folder,      "result_opf_69_24_standard_data_center.json"))
-opf_ac_congested = JSON.parsefile(joinpath(results_folder,"result_opf_ac_69_24_standard_data_center.json"))
+bs_congested = JSON.parsefile(joinpath(results_folder,        "result_bs_$(name_file).json"))
+opf_congested = JSON.parsefile(joinpath(results_folder,      "result_opf_$(name_file).json"))
+opf_ac_congested = JSON.parsefile(joinpath(results_folder,"result_opf_ac_$(name_file).json"))
 
 obj_bs_congested     = [bs_congested["$h"]["objective"] for h in 1:n_timesteps] 
 obj_opf_congested    = [opf_congested["$h"]["objective"] for h in 1:n_timesteps] 
@@ -80,7 +80,7 @@ obj_opf_ac_congested = [opf_ac_congested["$h"]["objective"] for h in 1:n_timeste
 
 #################
 
-function sort_configurations(grid_bs,result_bs,n_timesteps)
+function sort_topologies(grid_bs,result_bs,n_timesteps)
     conf_switches = []
     for h in 1:n_timesteps
         if result_bs["$h"]["primal_status"] == "FEASIBLE_POINT"
@@ -112,7 +112,7 @@ function sort_configurations(grid_bs,result_bs,n_timesteps)
     for k in keys(map_conf)
         count_ += 1
         confs["$(count_)"] = Dict{String,Any}()
-        confs["$(count_)"]["configuration"] = k  
+        confs["$(count_)"]["topology"] = k  
         confs["$(count_)"]["occurrences"] = map_conf[k]
         confs["$(count_)"]["timesteps"] = positions_map[k]
     end
@@ -121,18 +121,51 @@ function sort_configurations(grid_bs,result_bs,n_timesteps)
     return confs, sort_times
 end
 
-dict_confs, sorted_confs = sort_configurations(test_case_updated_split,bs_congested,n_timesteps)
+dict_confs, sorted_confs = sort_topologies(test_case_updated_split,bs_congested,n_timesteps)
 
 #################
-# Selecting configurations and timesteps
+# Selecting Topologys and timesteps
 n_confs_selected = 4
 confs_selected = [parse(Int, sorted_confs[i][1]) for i in 1:n_confs_selected]
 timeseries_selected = [first(dict_confs["$(confs_selected[i])"]["timesteps"]) for i in 1:n_confs_selected]
-
 conf_and_timeseries = [[confs_selected[i],timeseries_selected[i]] for i in 1:n_confs_selected]
 
-###################
 
+dict_confs["20"]["topology"]
+dict_confs["3"]["topology"]
+dict_confs["168"]["topology"]
+dict_confs["227"]["topology"]
+
+
+function count_connections_to_extremes(topology,grid_bs,extremes,switch_couples)
+    dict = Dict{String,Any}()
+    for k in eachindex(extremes)
+        for extreme in extremes[k]
+            dict["$extreme"] = 0
+        end
+    end
+    dict["split_busbars"] = 0
+    for (sw_id,sw) in grid_bs["switch"]
+        if haskey(sw,"auxiliary")
+            if topology[parse(Int64,sw_id)] == 1.0
+                dict["$(sw["t_bus"])"] += 1
+            end
+        else
+            if topology[parse(Int64,sw_id)] == 0.0
+                dict["split_busbars"] += 1
+            end
+        end
+    end
+    return dict
+end
+
+switches_20 = count_connections_to_extremes(dict_confs["20"]["topology"],test_case_updated_split,extremes_ZILs,switches_couples)
+switches_3 = count_connections_to_extremes(dict_confs["3"]["topology"],test_case_updated_split,extremes_ZILs,switches_couples)
+switches_168 = count_connections_to_extremes(dict_confs["168"]["topology"],test_case_updated_split,extremes_ZILs,switches_couples)
+switches_227 = count_connections_to_extremes(dict_confs["227"]["topology"],test_case_updated_split,extremes_ZILs,switches_couples)
+
+###################
+#=
 function compare_different_topologies(grid_original,grid_bs,switches_couples,extremes_ZILs,n_timesteps,opf_ac,opf_lpac,conf_and_timeseries,result_bs,wind,load,load_multiplier)
     result_dict = Dict{String,Any}()
     for t in 1:n_timesteps
@@ -178,21 +211,21 @@ json_result_congested_comparison = JSON.json(result_congested_comparison)
 open(joinpath(results_folder,"comparison_results_69_24_standard_data_center.json"),"w") do f 
     write(f, json_result_congested_comparison) 
 end 
-
-result_congested_comparison = JSON.parsefile(joinpath(results_folder,"comparison_results_69_24_standard_data_center.json"))
+=#
+result_congested_comparison = JSON.parsefile(joinpath(results_folder,"comparison_results_$name_file.json"))
 
 
 ###############
-function count_configurations(n_timesteps,conf_and_timeseries,result_comparison,opf_ac)
-    count_configurations = Dict{String,Any}()
-    count_configurations["OPF"] = Dict{String,Any}()
-    count_configurations["OPF"]["times"] = 0
-    count_configurations["OPF"]["timesteps"] = []
+function count_Topologys(n_timesteps,conf_and_timeseries,result_comparison,opf_ac)
+    count_Topologys = Dict{String,Any}()
+    count_Topologys["OPF"] = Dict{String,Any}()
+    count_Topologys["OPF"]["times"] = 0
+    count_Topologys["OPF"]["timesteps"] = []
     for i in 1:n_confs_selected
         conf = conf_and_timeseries[i][1]
-        count_configurations["$conf"] = Dict{String,Any}()
-        count_configurations["$conf"]["times"] = 0
-        count_configurations["$conf"]["timesteps"] = []
+        count_Topologys["$conf"] = Dict{String,Any}()
+        count_Topologys["$conf"]["times"] = 0
+        count_Topologys["$conf"]["timesteps"] = []
     end
 
     for t in 1:n_timesteps
@@ -204,45 +237,45 @@ function count_configurations(n_timesteps,conf_and_timeseries,result_comparison,
         end
         opfs_sorted = sort(opfs, by = x -> first(x))
         min_conf = first(opfs_sorted)[2]
-        count_configurations["$min_conf"]["times"] += 1
-        push!(count_configurations["$min_conf"]["timesteps"],t)
+        count_Topologys["$min_conf"]["times"] += 1
+        push!(count_Topologys["$min_conf"]["timesteps"],t)
     end
-    return count_configurations
+    return count_Topologys
 end
-number_configurations = count_configurations(n_timesteps,conf_and_timeseries,result_congested_comparison,opf_ac_congested)
+number_Topologys = count_Topologys(n_timesteps,conf_and_timeseries,result_congested_comparison,opf_ac_congested)
 ###############
 # Tailored part
 ##########
-function print_switch_configuration(conf,confs_original,grid_bs,grid_original)
+function print_switch_Topology(conf,confs_original,grid_bs,grid_original)
     for sw_id in 1:length(test_case_updated_split["switch"])
         if haskey(test_case_updated_split["switch"]["$sw_id"],"auxiliary")
             if test_case_updated_split["switch"]["$sw_id"]["auxiliary"] == "branch"
-                println("Switch $sw_id between bus $(grid_bs["switch"]["$sw_id"]["f_bus"]) and bus $(grid_bs["switch"]["$sw_id"]["t_bus"]), auxiliary $(grid_bs["switch"]["$sw_id"]["auxiliary"]), from $(grid_original["branch"]["$(grid_bs["switch"]["$sw_id"]["original"])"]["f_bus"]),to $(grid_original["branch"]["$(grid_bs["switch"]["$sw_id"]["original"])"]["t_bus"]),status $(confs_original["$conf"]["configuration"][sw_id])")
+                println("Switch $sw_id between bus $(grid_bs["switch"]["$sw_id"]["f_bus"]) and bus $(grid_bs["switch"]["$sw_id"]["t_bus"]), auxiliary $(grid_bs["switch"]["$sw_id"]["auxiliary"]), from $(grid_original["branch"]["$(grid_bs["switch"]["$sw_id"]["original"])"]["f_bus"]),to $(grid_original["branch"]["$(grid_bs["switch"]["$sw_id"]["original"])"]["t_bus"]),status $(confs_original["$conf"]["topology"][sw_id])")
             else
-                println("Switch $sw_id between bus $(grid_bs["switch"]["$sw_id"]["f_bus"]) and bus $(grid_bs["switch"]["$sw_id"]["t_bus"]), auxiliary $(grid_bs["switch"]["$sw_id"]["auxiliary"]), $(grid_bs["switch"]["$sw_id"]["original"]),status $(confs_original["$conf"]["configuration"][sw_id])")        
+                println("Switch $sw_id between bus $(grid_bs["switch"]["$sw_id"]["f_bus"]) and bus $(grid_bs["switch"]["$sw_id"]["t_bus"]), auxiliary $(grid_bs["switch"]["$sw_id"]["auxiliary"]), $(grid_bs["switch"]["$sw_id"]["original"]),status $(confs_original["$conf"]["topology"][sw_id])")        
             end
         else
-            println("Switch $sw_id, f_bus $(grid_bs["switch"]["$sw_id"]["f_bus"]), t_bus $(grid_bs["switch"]["$sw_id"]["t_bus"]) status $(confs_original["$conf"]["configuration"][sw_id])") 
+            println("Switch $sw_id, f_bus $(grid_bs["switch"]["$sw_id"]["f_bus"]), t_bus $(grid_bs["switch"]["$sw_id"]["t_bus"]) status $(confs_original["$conf"]["topology"][sw_id])") 
         end
     end 
 end   
 
-print_switch_configuration(conf_and_timeseries[1][1],dict_confs,test_case_updated_split,test_case_original)
-print_switch_configuration(conf_and_timeseries[2][1],dict_confs,test_case_updated_split,test_case_original)
-print_switch_configuration(conf_and_timeseries[3][1],dict_confs,test_case_updated_split,test_case_original)
-print_switch_configuration(conf_and_timeseries[4][1],dict_confs,test_case_updated_split,test_case_original)
-#print_switch_configuration(conf_and_timeseries[5][1],dict_confs,test_case_updated_split,test_case_original)
+print_switch_Topology(conf_and_timeseries[1][1],dict_confs,test_case_updated_split,test_case_original)
+print_switch_Topology(conf_and_timeseries[2][1],dict_confs,test_case_updated_split,test_case_original)
+print_switch_Topology(conf_and_timeseries[3][1],dict_confs,test_case_updated_split,test_case_original)
+print_switch_Topology(conf_and_timeseries[4][1],dict_confs,test_case_updated_split,test_case_original)
+#print_switch_Topology(conf_and_timeseries[5][1],dict_confs,test_case_updated_split,test_case_original)
 
 # Top left is 4
 # Top right is 2
 # Bottom left is 4 
 # Bottom right is 1
 
-timesteps_OPF = number_configurations["OPF"]["timesteps"]
-timesteps_1 =  number_configurations["$(conf_and_timeseries[1][1])"]["timesteps"]
-timesteps_2 =  number_configurations["$(conf_and_timeseries[2][1])"]["timesteps"]
-timesteps_3 =  number_configurations["$(conf_and_timeseries[3][1])"]["timesteps"]
-timesteps_4 =  number_configurations["$(conf_and_timeseries[4][1])"]["timesteps"]
+timesteps_OPF = number_Topologys["OPF"]["timesteps"]
+timesteps_1 =  number_Topologys["$(conf_and_timeseries[1][1])"]["timesteps"]
+timesteps_2 =  number_Topologys["$(conf_and_timeseries[2][1])"]["timesteps"]
+timesteps_3 =  number_Topologys["$(conf_and_timeseries[3][1])"]["timesteps"]
+timesteps_4 =  number_Topologys["$(conf_and_timeseries[4][1])"]["timesteps"]
 
 wind_OPF = [wind_cf[t] for t in timesteps_OPF]
 wind_1 = [wind_cf[t] for t in timesteps_1]
@@ -275,17 +308,21 @@ bus_4 = sum(result_congested_comparison["$h"]["$(conf_and_timeseries[4][1])"]["A
 load_combined = vcat(load_OPF,load_1,load_3)
 wind_combined = vcat(wind_OPF,wind_1,wind_3)
 
-load_1_3 = vcat(load_1,load_3)
-wind_1_3 = vcat(wind_1,wind_3)
-# Add colors here
-#scatter(load_1, wind_1, label="Configuration 1", color=:blue)
-scatter(load_1_3, wind_1_3, label="Configuration 1", color=:blue)
-#scatter!(load_3, wind_3, label="Configuration 2", color=:green)
-#scatter!(load_4, wind_4, label="Configuration 3", color=:orange)
-#scatter!(load_4, wind_4, label="Configuration 4",color=:red)
-scatter!(load_OPF,wind_OPF,label="OPF",color=:gray,xlabel= "Demand (p.u.)",ylabel="Wind capacity factor [-]",legend=:topright,grid =:none)
+load_1_4 = vcat(load_1,load_4)
+wind_1_4 = vcat(wind_1,wind_4)
 
-#scatter!(load_153 ,wind_153,label="Configuration 4",xlabel= "Demand [-]",ylabel="Wind capacity factor [-]",legend=:topright,grid =:none)
+load_1_ = []
+wind_1_ = []
+
+# Add colors here
+scatter(load_1_, wind_1_, label="Topology 1", color=:blue)
+#scatter(load_1_3, wind_1_3, label="Topology 1", color=:blue)
+scatter!(load_2, wind_2, label="Topology 2", color=:green)
+scatter!(load_3, wind_3, label="Topology 3", color=:orange)
+scatter!(load_1_4, wind_1_4, label="Topology 4",color=:red)
+scatter!(load_OPF,wind_OPF,label="Original",color=:gray,xlabel= "Demand (p.u.)",ylabel="Wind capacity factor [-]",legend=:topright,grid =:none)
+
+#scatter!(load_153 ,wind_153,label="Topology 4",xlabel= "Demand [-]",ylabel="Wind capacity factor [-]",legend=:topright,grid =:none)
 #scatter!(load_OPF,wind_OPF,label="OPF")
 
 results_figures_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results/Figures"

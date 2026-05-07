@@ -95,11 +95,11 @@ test_case_updated_split_2_result,  switches_couples_2_result,  extremes_ZILs_2_r
 # Upload results
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 
-bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_49_46.json"))
+bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_$(name_file_1).json"))
 #opf_congested_1 = JSON.parsefile(joinpath(results_folder,      "result_opf_49_46_data_center.json"))
 #opf_ac_congested_1 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_49_46_data_center.json"))
 
-bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested_49_46.json"))
+bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_$(name_file_2).json"))
 #opf_congested_2 = JSON.parsefile(joinpath(results_folder,      "result_opf_congested_49_46_data_center.json"))
 #opf_ac_congested_2 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_congested_49_46_data_center.json"))
 
@@ -156,12 +156,12 @@ n_confs_selected_validation_4 = 4
 n_confs_selected_validation_1 = 1
 
 # Og
-confs_selected_1_validation_4 = [parse(Int, sorted_confs_1[i][1]) for i in 1:n_confs_selected_validation_4]
+confs_selected_1_validation_4 = [parse(Int, sorted_confs_1[i][1]) for i in (1+1):(n_confs_selected_validation_4+1)]
 timeseries_selected_1_validation_4 = [first(dict_confs_1["$(confs_selected_1_validation_4[i])"]["timesteps"]) for i in 1:n_confs_selected_validation_4]
 conf_and_timeseries_1_validation_4 = [[confs_selected_1_validation_4[i],timeseries_selected_1_validation_4[i]] for i in 1:n_confs_selected_validation_4]
 #result_congested_comparison_1 = JSON.parsefile(joinpath(results_folder,"comparison_results_$(name_file_1).json"))
 
-confs_selected_1_validation_1 = [parse(Int, sorted_confs_1[i][1]) for i in 1:n_confs_selected_validation_1]
+confs_selected_1_validation_1 = [parse(Int, sorted_confs_1[i][1]) for i in (1+1):(n_confs_selected_validation_1+1)]
 timeseries_selected_1_validation_1 = [first(dict_confs_1["$(confs_selected_1_validation_1[i])"]["timesteps"]) for i in 1:n_confs_selected_validation_1]
 conf_and_timeseries_1_validation_1 = [[confs_selected_1_validation_1[i],timeseries_selected_1_validation_1[i]] for i in 1:n_confs_selected_validation_1]
 
@@ -211,6 +211,7 @@ number_configurations_2 = count_configurations(n_timesteps,conf_and_timeseries_2
 
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results/Validation"
 
+# Change this one
 function batch_opf_validation_opf_optimized_topology(first_hour,last_hour,size_batch,load_time_series,wind_time_series,optimizer,formulation,results_folder,grid_original,result_bs,load_multiplier,conf_and_timeseries,name_file,splitted_bus_ac)
     for sample in Int64(first_hour/size_batch):Int64(last_hour/size_batch)
         dict = Dict{String,Any}()
@@ -245,7 +246,7 @@ function batch_opf_validation_opf_optimized_topology(first_hour,last_hour,size_b
             end
         end
         json_opf = JSON.json(dict)        
-        open(joinpath(results_folder,"Validation_$(name_file)_$(start_idx)_$(end_idx)_$(length(conf_and_timeseries))_configurations.json"),"w") do f 
+        open(joinpath(results_folder,"Validation_$(name_file)_$(start_idx)_$(end_idx)_$(length(conf_and_timeseries))_configurations_no_137.json"),"w") do f 
             write(f, json_opf) 
         end
     end

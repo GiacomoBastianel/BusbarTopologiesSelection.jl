@@ -72,6 +72,7 @@ end
 
 add_VOLL_generators(test_case_1)
 add_VOLL_generators(test_case_2)
+#=
 test_case_1["gen"]["138"]["cost"][1] = 9000
 test_case_2["gen"]["138"]["cost"][1] = 9000
 
@@ -94,13 +95,13 @@ test_case_original_2["load"]["100"] = deepcopy(test_case_original_2["load"]["99"
 test_case_original_2["load"]["100"]["source_id"][2] = 69
 test_case_original_2["load"]["100"]["load_bus"] = 69
 test_case_original_2["load"]["100"]["pd"] = deepcopy(test_case_original_2["load"]["97"]["pd"])
-
+=#
 
 test_case_opf_1 = deepcopy(test_case_1)
 test_case_opf_2 = deepcopy(test_case_2)
-splitted_bus_ac = [69,24]
-name_file_1 = "69_24_standard_data_center"
-name_file_2 = "69_24_congested_data_center"
+splitted_bus_ac = [49,46]
+name_file_1 = "49_46_standard"
+name_file_2 = "49_46_congested"
 
 
 test_case_updated_split_1_result = deepcopy(test_case_1)
@@ -115,12 +116,19 @@ test_case_updated_split_2_result,  switches_couples_2_result,  extremes_ZILs_2_r
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 
 bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_$(name_file_1).json"))
-#opf_congested_1 = JSON.parsefile(joinpath(results_folder,      "result_opf_49_46_data_center.json"))
-#opf_ac_congested_1 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_49_46_data_center.json"))
 
-bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested_data_center.json"))
-#opf_congested_2 = JSON.parsefile(joinpath(results_folder,      "result_opf_congested_49_46_data_center.json"))
-#opf_ac_congested_2 = JSON.parsefile(joinpath(results_folder,"result_opf_ac_congested_49_46_data_center.json"))
+bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_$(name_file_2).json"))
+opf_lpac_congested_2 = JSON.parsefile(joinpath(results_folder, "result_opf_$(name_file_2).json"))
+
+diff_ = []
+for t in 1:365 
+    if bs_congested_2["$t"]["primal_status"] == "FEASIBLE_POINT"
+        diff_t = opf_lpac_congested_2["$t"]["objective"] - bs_congested_2["$t"]["objective"]
+        push!(diff_,[diff_t,t])
+    end
+end
+findmax(diff_)
+
 
 #################
 
@@ -169,13 +177,15 @@ n_timesteps = 365
 dict_confs_1, sorted_confs_1 = sort_configurations(test_case_updated_split_1_result,bs_congested_1,n_timesteps)
 dict_confs_2, sorted_confs_2 = sort_configurations(test_case_updated_split_2_result,bs_congested_2,n_timesteps)
 
+
+
 #################
 # Selecting configurations and timesteps
 n_confs_selected_validation_4 = 4
 n_confs_selected_validation_1 = 1
 
 # Og
-confs_selected_1_validation_4 = [parse(Int, sorted_confs_1[i][1]) for i in 1:n_confs_selected_validation_4]
+confs_selected_1_validation_4 = [parse(Int, sorted_confs_1[i][1]) for i in (1+1):(n_confs_selected_validation_4+1)]
 timeseries_selected_1_validation_4 = [first(dict_confs_1["$(confs_selected_1_validation_4[i])"]["timesteps"]) for i in 1:n_confs_selected_validation_4]
 conf_and_timeseries_1_validation_4 = [[confs_selected_1_validation_4[i],timeseries_selected_1_validation_4[i]] for i in 1:n_confs_selected_validation_4]
 #result_congested_comparison_1 = JSON.parsefile(joinpath(results_folder,"comparison_results_$(name_file_1).json"))
@@ -247,7 +257,7 @@ function upload_batch_opf_validation_results(first_hour,last_hour,size_batch,res
         GC.gc()  # Trigger garbage collection to free up
     end
     json_dict = JSON.json(dict)        
-    open(joinpath(results_folder,"Validation_$(name_file)_$(Int64(first_hour/size_batch))_$(last_hour)_$(type)_II.json"),"w") do f 
+    open(joinpath(results_folder,"Validation_$(name_file)_$(Int64(first_hour/size_batch))_$(last_hour)_$(type)_.json"),"w") do f 
         write(f, json_dict) 
     end
     return dict

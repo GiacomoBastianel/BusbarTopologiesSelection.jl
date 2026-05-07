@@ -13,7 +13,7 @@ using Plots
 test_case_folder = joinpath(dirname(@__DIR__),"test_cases")
 
 ipopt = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol" => 1e-6, "print_level" => 0)
-gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer,"MIPGap" => 5e-4, "time_limit" => 180)
+gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer,"MIPGap" => 1e-5, "time_limit" => 180)
 highs = JuMP.optimizer_with_attributes(HiGHS.Optimizer)
 
 #test_case = _PM.parse_file(joinpath(test_case_folder,"FormattedData","MATPOWER","RTS_GMLC.m"))
@@ -23,6 +23,7 @@ function split_every_hour(data,n_hours,wind_series,load_series,load_multiplier)
     result = Dict{String,Any}()
     hourly_grid = deepcopy(data)
     for h in 1:n_hours
+        println("Processing hour $h")
         hourly_grid["gen"]["30"]["pmax"] = data["gen"]["30"]["pmax"] * wind_series[h]
         for (l_id,l) in hourly_grid["load"]
             hourly_grid["load"][l_id]["pd"] = data["load"][l_id]["pd"] * load_multiplier * load_series[h]
@@ -83,33 +84,46 @@ function add_VOLL_generators(data)
 end
 add_VOLL_generators(test_case)
 
+# Adding load
+#=
+test_case["load"]["100"] = deepcopy(test_case["load"]["99"])
+test_case["load"]["100"]["source_id"][2] = 69
+test_case["load"]["100"]["load_bus"] = 69
+test_case["load"]["100"]["pd"] = deepcopy(test_case["load"]["97"]["pd"])
+
+test_case_original["load"]["100"] = deepcopy(test_case["load"]["99"])
+test_case_original["load"]["100"]["source_id"][2] = 69
+test_case_original["load"]["100"]["load_bus"] = 69
+test_case_original["load"]["100"]["pd"] = deepcopy(test_case["load"]["97"]["pd"])
+=#
 test_case_opf = deepcopy(test_case)
 
-splitted_bus_ac = [69,24]
+splitted_bus_ac = [49,46]
 test_case_updated_split = deepcopy(test_case)
 
 # Preparing data
 test_case_updated_split,  switches_couples,  extremes_ZILs  = _PMTA.AC_busbars_split(test_case,splitted_bus_ac)
 
-result_bs_congested = split_every_hour(test_case_updated_split,n_timesteps,wind_cf,load)
-result_opf_congested = split_opf(test_case_opf,n_timesteps,wind_cf,load,LPACCPowerModel)
-result_opf_ac_congested = split_opf(test_case_opf,n_timesteps,wind_cf,load,ACPPowerModel)
+name_file = "standard_49_46"
+result_bs_congested = split_every_hour(test_case_updated_split,n_timesteps,wind_cf,load,1)
+result_opf_congested = split_opf(test_case_opf,n_timesteps,wind_cf,load,LPACCPowerModel,1)
+result_opf_ac_congested = split_opf(test_case_opf,n_timesteps,wind_cf,load,ACPPowerModel,1)
 
 
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 
 json_result_bs_congested = JSON.json(result_bs_congested)
-open(joinpath(results_folder,"result_bs_congested.json"),"w") do f 
+open(joinpath(results_folder,"result_bs_$(name_file).json"),"w") do f 
     write(f, json_result_bs_congested) 
 end 
 
 json_result_opf_congested = JSON.json(result_opf_congested)
-open(joinpath(results_folder,"result_opf_congested.json"),"w") do f 
+open(joinpath(results_folder,"result_opf_$(name_file).json"),"w") do f 
     write(f, json_result_opf_congested) 
 end 
 
 json_result_opf_ac_congested = JSON.json(result_opf_ac_congested)
-open(joinpath(results_folder,"result_opf_ac_congested.json"),"w") do f 
+open(joinpath(results_folder,"result_opf_ac_$(name_file).json"),"w") do f 
     write(f, json_result_opf_ac_congested) 
 end 
 

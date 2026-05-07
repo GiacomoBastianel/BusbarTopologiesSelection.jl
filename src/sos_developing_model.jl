@@ -82,6 +82,7 @@ add_VOLL_generators(test_case_2)
 test_case_1["gen"]["138"]["cost"][1] = 9000
 test_case_2["gen"]["138"]["cost"][1] = 9000
 
+#=
 test_case_1["load"]["100"] = deepcopy(test_case_1["load"]["99"])
 test_case_1["load"]["100"]["source_id"][2] = 69
 test_case_1["load"]["100"]["load_bus"] = 69
@@ -101,13 +102,13 @@ test_case_original_2["load"]["100"] = deepcopy(test_case_original_2["load"]["99"
 test_case_original_2["load"]["100"]["source_id"][2] = 69
 test_case_original_2["load"]["100"]["load_bus"] = 69
 test_case_original_2["load"]["100"]["pd"] = deepcopy(test_case_original_2["load"]["97"]["pd"])
-
+=#
 
 test_case_opf_1 = deepcopy(test_case_1)
 test_case_opf_2 = deepcopy(test_case_2)
 splitted_bus_ac = [69,24]
-name_file_1 = "69_24_standard_data_center"
-name_file_2 = "69_24_congested_data_center"
+name_file_1 = "69_24_standard"
+name_file_2 = "69_24_congested"
 
 test_case_updated_split_1_result = deepcopy(test_case_1)
 test_case_updated_split_2_result = deepcopy(test_case_2)
@@ -121,8 +122,8 @@ test_case_updated_split_2_result,  switches_couples_2_result,  extremes_ZILs_2_r
 # Upload results
 results_folder = "/Users/giacomobastianel/Library/CloudStorage/OneDrive-KULeuven/Busbar_topologies_selection_results"
 
-bs_congested_1 = JSON.parsefile(joinpath(results_folder,        "result_bs_data_center.json"))
-bs_congested_2 = JSON.parsefile(joinpath(results_folder,        "result_bs_congested_data_center.json"))
+bs_congested_1 = JSON.parsefile(joinpath(results_folder, "result_bs_$(name_file_1).json"))
+bs_congested_2 = JSON.parsefile(joinpath(results_folder, "result_bs_$(name_file_2).json"))
 
 #################
 function sort_configurations(grid_bs,result_bs,n_timesteps)
@@ -215,39 +216,113 @@ function batch_opf_validation_choosing_topology(first_hour,last_hour,size_batch,
             dict["$t"] = deepcopy(mn_opf_choose_topology)
         end
         json_opf = JSON.json(dict)        
-        open(joinpath(results_folder,"Choose_topology_$(name_file)_$(start_idx)_$(end_idx)_$(length(conf_and_timeseries))_configurations.json"),"w") do f 
+        open(joinpath(results_folder,"Choose_topology_$(formulation)_$(name_file)_$(start_idx)_$(end_idx)_$(length(conf_and_timeseries))_configurations.json"),"w") do f 
             write(f, json_opf) 
         end
     end
 end
 
-batch_opf_validation_choosing_topology(24,8784,24,time_series.demand,time_series.wind_cf,juniper,ACPPowerModel,results_folder,test_case_1,bs_congested_1,1,conf_and_timeseries_1_validation_4,name_file_1,splitted_bus_ac)
-batch_opf_validation_choosing_topology(24,8784,24,time_series.demand,time_series.wind_cf,juniper,ACPPowerModel,results_folder,test_case_2,bs_congested_2,2,conf_and_timeseries_1_validation_4,name_file_2,splitted_bus_ac)
+batch_opf_validation_choosing_topology(24,720*4,24,time_series.demand,time_series.wind_cf,gurobi,LPACCPowerModel,results_folder,test_case_1,bs_congested_1,1,conf_and_timeseries_1_validation_4,name_file_1,splitted_bus_ac)
+batch_opf_validation_choosing_topology(24,720*4,24,time_series.demand,time_series.wind_cf,gurobi,LPACCPowerModel,results_folder,test_case_2,bs_congested_2,2,conf_and_timeseries_2_validation_4,name_file_2,splitted_bus_ac)
 
-#try_batch_opf = batch_opf_validation_opf(24,8784,24,time_series.demand,time_series.wind_cf,ipopt,ACPPowerModel,results_folder,test_case_opf_1,1,name_file_1)
-#try_batch_1 = batch_opf_validation_opf_optimized_topology(24,8784,24,time_series.demand,time_series.wind_cf,ipopt,ACPPowerModel,results_folder,test_case_1,bs_congested_1,1,conf_and_timeseries_1_validation_1,name_file_1,splitted_bus_ac)
-
-try_batch_og_2 = batch_opf_validation_opf_optimized_topology(24,8784,24,time_series.demand,time_series.wind_cf,ipopt,ACPPowerModel,results_folder,test_case_2,bs_congested_2,2,conf_and_timeseries_2_validation_4,name_file_2,splitted_bus_ac)
-try_batch_opf_2 = batch_opf_validation_opf(24,8784,24,time_series.demand,time_series.wind_cf,ipopt,ACPPowerModel,results_folder,test_case_opf_2,2,name_file_2)
-try_batch_2 = batch_opf_validation_opf_optimized_topology(24,8784,24,time_series.demand,time_series.wind_cf,ipopt,ACPPowerModel,results_folder,test_case_2,bs_congested_2,2,conf_and_timeseries_2_validation_1,name_file_2,splitted_bus_ac)
+optimized_topology =JSON.parsefile(joinpath(dirname(results_folder),"Results_batch","Result_BS_Congested_hours_1_24.json"))
+chosen_topology = JSON.parsefile(joinpath(results_folder,"Choose_topology_$(name_file_2)_1_24_4_configurations.json"))
 
 
-T = 4
 
-ipopt = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol" => 1e-6, "print_level" => 0)
-gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer,"MIPGap" => 5e-4, "time_limit" => 180)
-highs = JuMP.optimizer_with_attributes(HiGHS.Optimizer)
-
-
-mn_opf = _PM.solve_mn_opf(mn_test_case, ACPPowerModel, ipopt)
-mn_opf_choose_topology = _BTS.solve_opf_choose_topology(mn_test_case, LPACCPowerModel, gurobi)
-
-for (l_id,l) in mn_test_case["nw"]["1"]["load"]
-    mn_test_case["nw"]["2"]["load"][l_id]["pd"] = l["pd"]*2
-    mn_test_case["nw"]["3"]["load"][l_id]["pd"] = l["pd"]*3
-    mn_test_case["nw"]["4"]["load"][l_id]["pd"] = l["pd"]*4
+function upload_results_choosing_topology(first_hour,last_hour,size_batch,formulation,results_folder,name_file,conf_and_timeseries)
+    results_dict = Dict{String,Any}()
+    for sample in Int64(first_hour/size_batch):Int64(last_hour/size_batch)
+        dict = Dict{String,Any}()
+        start_idx = size_batch*(sample-1) + 1
+        end_idx = size_batch*(sample-1) + 24
+        file = joinpath(results_folder,"Choose_topology_$(formulation)_$(name_file)_$(start_idx)_$(end_idx)_$(length(conf_and_timeseries))_configurations.json")
+        json_opf = JSON.parsefile(file) 
+        for t in start_idx:end_idx
+            results_dict["$t"] = deepcopy(json_opf["$t"])
+        end       
+    end
+    return results_dict
 end
 
-model = _PM.instantiate_model(mn_test_case, DCPPowerModel, build_mn_opf)
-model_choose_topology = _PM.instantiate_model(mn_test_case,ACPPowerModel,_BTS.build_opf_choose_topology)
+results_standard = upload_results_choosing_topology(24,168,24,LPACCPowerModel,results_folder,name_file_1,conf_and_timeseries_1_validation_4)
+results_congested = upload_results_choosing_topology(24,168,24,LPACCPowerModel,results_folder,name_file_2,conf_and_timeseries_2_validation_4)
 
+function count_chosen_topology(results,conf_and_timeseries)
+    count_chosen_topology = Dict{String,Int}()
+    for i in 1:length(conf_and_timeseries)
+        count_chosen_topology["$i"] = 0
+    end
+    for t in keys(results)
+        for i in 1:length(conf_and_timeseries)
+            if results["$t"]["solution"]["solution"]["nw"]["$i"]["z_c"] == 1.0
+                count_chosen_topology["$i"] += 1
+            end
+        end
+    end
+    return count_chosen_topology
+end
+count_chosen_topology_standard = count_chosen_topology(results_standard,conf_and_timeseries_1_validation_4)
+count_chosen_topology_congested = count_chosen_topology(results_congested,conf_and_timeseries_2_validation_4)
+
+#############
+BuS_congested_full_year = JSON.parsefile(joinpath(results_folder,"BuS_49_46_congested_24_8784.json"))
+BuS_standard_full_year = JSON.parsefile(joinpath(results_folder,"BuS_49_46_standard_24_8784.json")) 
+#=
+obj_opt_congested = [BuS_congested_full_year["$t"]["objective"] for t in 1:168]
+obj_opt_standard = [BuS_standard_full_year["$t"]["objective"] for t in 1:168]
+
+obj_chosen_congested = [results_congested["$t"]["objective"] for t in 1:168]
+obj_chosen_standard = [results_standard["$t"]["objective"] for t in 1:168]
+
+time_congested = [results_congested["$t"]["solve_time"] for t in 1:168]
+time_standard = [results_standard["$t"]["solve_time"] for t in 1:168]
+
+
+obj_opt_congested_diff = [obj_chosen_congested[i] - obj_opt_congested[i] for i in 1:length(obj_opt_congested)]
+obj_opt_standard_diff = [obj_chosen_standard[i] - obj_opt_standard[i] for i in 1:length(obj_opt_standard)]
+=#
+
+function upload_results_BuS(first_hour,last_hour,size_batch,results_folder,name_file)
+    results_dict = Dict{String,Any}()
+    for sample in Int64(first_hour):Int64(last_hour/size_batch)
+        start_idx = size_batch*(sample-1) + 1
+        end_idx = size_batch*(sample-1) + 24
+        println("Uploading results from hour $start_idx to hour $end_idx")
+        file = joinpath(results_folder,"BuS_$(name_file)_$(start_idx)_$(end_idx)_BuS.json")
+        json_bus = JSON.parsefile(file) 
+        for t in start_idx:end_idx
+            results_dict["$t"] = deepcopy(json_bus["$t"])
+        end       
+    end
+    return results_dict
+end
+results_BuS_folder = joinpath(results_folder)
+last_hour_BuS = 168
+
+BuS_results = upload_results_BuS(1,168,24,results_BuS_folder,name_file_1)
+
+time_original = [BuS_results["$t"]["solve_time"] for t in 1:last_hour_BuS]
+obj_original = [BuS_results["$t"]["objective"] for t in 1:last_hour_BuS]
+
+time_standard = [results_standard["$t"]["solve_time"] for t in 1:last_hour_BuS]
+obj_standard = [results_standard["$t"]["objective"] for t in 1:last_hour_BuS]
+
+obj_diff_standard = [obj_standard[i] - obj_original[i] for i in 1:60]#length(obj_original)]
+solve_time_diff_standard = [time_standard[i] - time_original[i] for i in 1:60]#length(time_original)]
+
+for t in 1:168
+    if isnothing(obj_original[t])
+        println("Hour $t has no solution")
+    end
+end
+obj_original[36]
+
+
+BuS_results["61"]
+
+BuS_results_original["36"]
+
+for t in 1:168
+    println("Hour $t, value ",obj_standard[t])
+end

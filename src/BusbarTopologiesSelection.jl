@@ -17,8 +17,8 @@ include("core/constraint_template.jl")
 include("core/objective.jl")
 include("core/variable.jl")
 include("core/build_data.jl")
-include("formdcgrid/acp.jl")
-include("formdcgrid/lpac.jl")
+include("form/acp.jl")
+include("form/lpac.jl")
 include("prob/opf.jl")
 
 end

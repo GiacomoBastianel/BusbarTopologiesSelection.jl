@@ -9,6 +9,10 @@ using PowerPlots, CSV, DataFrames, StatsBase, Plots
 ################
 test_case_folder = joinpath(dirname(@__DIR__),"test_cases")
 ipopt = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol" => 1e-6, "print_level" => 0)
+#gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer,"MIPGap" => 1e-4, "time_limit" => 300)
+gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer,"MIPGap" => 1e-4, "time_limit" => 300,"BarQCPConvTol"=>1e-6,"QCPDual" => 1,"ScaleFlag"=>2, "NumericFocus"=>2)
+#gurobi = JuMP.optimizer_with_attributes(Gurobi.Optimizer,"BarQCPConvTol"=>1e-6,"QCPDual" => 1)#r, "ScaleFlag"=>2, "NumericFocus"=>2) 
+
 
 wind_series = CSV.read(joinpath(test_case_folder,"RTS_GMLC_data","RTS_Data","timeseries_data_files","WIND","DAY_AHEAD_wind.csv"),DataFrame)
 wind_69 = wind_series[:,7]
@@ -54,7 +58,7 @@ for (b_id,b) in test_case_original_2["bus"]
 end
 
 # Adding load
-
+#=
 test_case_1["load"]["100"] = deepcopy(test_case_1["load"]["99"])
 test_case_1["load"]["100"]["source_id"][2] = 69
 test_case_1["load"]["100"]["load_bus"] = 69
@@ -74,7 +78,7 @@ test_case_original_2["load"]["100"] = deepcopy(test_case_original_2["load"]["99"
 test_case_original_2["load"]["100"]["source_id"][2] = 69
 test_case_original_2["load"]["100"]["load_bus"] = 69
 test_case_original_2["load"]["100"]["pd"] = deepcopy(test_case_original_2["load"]["97"]["pd"])
-
+=#
 
 
 function add_VOLL_generators(data)
@@ -103,8 +107,8 @@ test_case_2["gen"]["138"]["cost"][1] = 9000
 test_case_opf_1 = deepcopy(test_case_1)
 test_case_opf_2 = deepcopy(test_case_2)
 splitted_bus_ac = [69,24]
-name_file_1 = "69_24_standard_data_center"
-name_file_2 = "69_24_congested_data_center"
+name_file_1 = "69_24_standard"
+name_file_2 = "69_24_congested"
 
 
 test_case_updated_split_1_result = deepcopy(test_case_1)
@@ -144,14 +148,14 @@ function batch_split_every_hour(first_hour,last_hour,size_batch,load_time_series
             dict["$t"] = deepcopy(result_switches_lpac)
         end
         json_opf = JSON.json(dict)        
-        open(joinpath(results_folder,"Validation_$(name_file)_$(start_idx)_$(end_idx)_BuS.json"),"w") do f 
+        open(joinpath(results_folder,"BuS_$(name_file)_$(start_idx)_$(end_idx)_BuS.json"),"w") do f 
             write(f, json_opf) 
         end
     end
 end
 
-batch_split_every_hour(24,8784,24,time_series.demand,time_series.wind_cf,gurobi,LPACCPowerModel,results_folder,test_case_original_1,1,name_file_1,splitted_bus_ac)
-batch_split_every_hour(24,8784,24,time_series.demand,time_series.wind_cf,gurobi,LPACCPowerModel,results_folder,test_case_original_1,2,name_file_2,splitted_bus_ac)
+batch_split_every_hour(720,8784,24,time_series.demand,time_series.wind_cf,gurobi,LPACCPowerModel,results_folder,test_case_opf_1,1,name_file_1,splitted_bus_ac)
+batch_split_every_hour(720,8784,24,time_series.demand,time_series.wind_cf,gurobi,LPACCPowerModel,results_folder,test_case_opf_2,2,name_file_2,splitted_bus_ac)
 
 #=
 try_batch_og = batch_opf_validation_opf_optimized_topology(24,8784,24,time_series.demand,time_series.wind_cf,ipopt,ACPPowerModel,results_folder,test_case_1,bs_congested_1,1,conf_and_timeseries_1_validation_4,name_file_1,splitted_bus_ac)

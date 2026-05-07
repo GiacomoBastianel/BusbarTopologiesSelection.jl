@@ -72,14 +72,14 @@ end
 
 add_VOLL_generators(test_case_1)
 add_VOLL_generators(test_case_2)
-test_case_1["gen"]["138"]["cost"][1] = 9000
-test_case_2["gen"]["138"]["cost"][1] = 9000
+#test_case_1["gen"]["138"]["cost"][1] = 9000
+#test_case_2["gen"]["138"]["cost"][1] = 9000
 
 test_case_opf_1 = deepcopy(test_case_1)
 test_case_opf_2 = deepcopy(test_case_2)
 splitted_bus_ac = [49,46]
 name_file_1 = "49_46_standard"
-name_file_2 = "49_46_congested_data_center"
+name_file_2 = "49_46_congested"
 #busbars = "49_46"
 
 test_case_updated_split_1_result = deepcopy(test_case_1)
@@ -142,7 +142,7 @@ upload_batch_opf_choose_topology_results(6480,8784,24,results_folder,name_file_2
 upload_batch_opf_choose_topology_results(24,8784,24,results_folder,name_file_2,"4_configurations",4)
 
 
-function upload_batch_opf_validation_results(first_hour,last_hour,size_batch,results_folder,name_file,type)
+function upload_batch_opf_validation_results(first_hour,last_hour,size_batch,results_folder,name_file,type,simulation)
     dict = Dict{String,Any}()
     for sample in 1:366
         start_idx = size_batch*(sample-1) + 1
@@ -161,7 +161,7 @@ function upload_batch_opf_validation_results(first_hour,last_hour,size_batch,res
         GC.gc()  # Trigger garbage collection to free up
     end
     json_dict = JSON.json(dict)        
-    open(joinpath(results_folder,"OPF_$(name_file)_$(first_hour)_$(last_hour).json"),"w") do f 
+    open(joinpath(results_folder,"$(simulation)_$(name_file)_$(first_hour)_$(last_hour).json"),"w") do f 
         write(f, json_dict) 
     end
     return dict
@@ -218,18 +218,21 @@ function upload_batch_conf_validation_results(first_hour,last_hour,size_batch,re
         GC.gc()  # Trigger garbage collection to free up
     end
     json_dict = JSON.json(dict)        
-    open(joinpath(results_folder,"$(type)_$(name_file)_$(first_hour)_$(last_hour).json"),"w") do f 
+    open(joinpath(results_folder,"$(type)_$(name_file)_$(first_hour)_$(last_hour)_no_137.json"),"w") do f 
         write(f, json_dict) 
     end
     return dict
 end
 
+upload_batch_opf_validation_results(24  ,8784,24,results_folder,name_file_1,"BuS","BuS")
+upload_batch_opf_validation_results(24  ,8784,24,results_folder,name_file_2,"BuS","BuS")
+
 
 upload_batch_opf_validation_results(24  ,8784,24,results_folder,name_file_1,"OPF")
 upload_batch_opf_validation_results(24  ,8784,24,results_folder,name_file_2,"OPF")
 
-upload_batch_conf_validation_results(24  ,8784,24,results_folder,name_file_1,"1_configurations")
-upload_batch_conf_validation_results(24  ,8784,24,results_folder,name_file_1,"4_configurations")
+upload_batch_conf_validation_results(24  ,8784,24,results_folder,name_file_1,"1_configurations_no_137")
+upload_batch_conf_validation_results(24  ,8784,24,results_folder,name_file_1,"4_configurations_no_137")
 
 upload_batch_conf_validation_results(24  ,8784,24,results_folder,name_file_2,"1_configurations")
 upload_batch_conf_validation_results(24  ,8784,24,results_folder,name_file_2,"4_configurations")
